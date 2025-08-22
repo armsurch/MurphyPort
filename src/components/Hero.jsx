@@ -30,7 +30,7 @@ const Hero = ({ resume }) => {
             <div className="hero-content">
               <div className="hero-avatar mb-4">
                 <img 
-                  src="/Image/Murphy.jpg" 
+                  src="/Image/Murphy2.jpg" 
                   alt="Emeka Onu Professional Headshot"
                   className="rounded-circle hero-profile-img"
                 />

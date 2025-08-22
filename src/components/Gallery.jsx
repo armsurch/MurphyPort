@@ -242,6 +242,11 @@ const Gallery = () => {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // New: search, sorting, pagination
+  const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState('title-asc'); // 'title-asc' | 'title-desc' | 'type' | 'category'
+  const [visibleCount, setVisibleCount] = useState(9);
+
   // Memoized calculations for performance
   const categories = useMemo(() => 
     [...new Set(mediaData.map(item => item.category))].sort(), 
@@ -256,27 +261,57 @@ const Gallery = () => {
     return counts;
   }, [categories]);
 
-  const filteredMedia = useMemo(() => 
-    activeFilter === 'all' 
+  const filteredSortedMedia = useMemo(() => {
+    let base = activeFilter === 'all' 
       ? mediaData 
-      : mediaData.filter(item => item.category === activeFilter),
-    [activeFilter]
-  );
+      : mediaData.filter(item => item.category === activeFilter);
+
+    // Search
+    const q = query.trim().toLowerCase();
+    if (q) {
+      base = base.filter(item => (
+        item.title.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.category.toLowerCase().includes(q)
+      ));
+    }
+
+    // Sort
+    const sorted = [...base].sort((a, b) => {
+      switch (sortBy) {
+        case 'title-desc':
+          return b.title.localeCompare(a.title);
+        case 'type':
+          // images first then videos
+          if (a.type === b.type) return a.title.localeCompare(b.title);
+          return a.type === 'image' ? -1 : 1;
+        case 'category':
+          return a.category.localeCompare(b.category) || a.title.localeCompare(b.title);
+        case 'title-asc':
+        default:
+          return a.title.localeCompare(b.title);
+      }
+    });
+
+    return sorted;
+  }, [activeFilter, query, sortBy]);
+
+  const displayedMedia = useMemo(() => filteredSortedMedia.slice(0, visibleCount), [filteredSortedMedia, visibleCount]);
 
   // Handlers
   const handleFilterChange = useCallback((filter) => {
     setIsLoading(true);
     setActiveFilter(filter);
-    
+    setVisibleCount(9);
     // Simulate loading for smooth transition
     setTimeout(() => setIsLoading(false), 300);
   }, []);
 
   const openModal = useCallback((index) => {
-    const actualIndex = mediaData.findIndex(item => item === filteredMedia[index]);
+    const actualIndex = mediaData.findIndex(item => item === displayedMedia[index]);
     setActiveMediaIndex(actualIndex);
     setShowModal(true);
-  }, [filteredMedia]);
+  }, [displayedMedia]);
 
   const closeModal = useCallback(() => {
     setShowModal(false);
@@ -295,39 +330,67 @@ const Gallery = () => {
     totalCategories: categories.length
   }), [categories]);
 
+  const canShowMore = displayedMedia.length < filteredSortedMedia.length;
+
   return (
     <section id="gallery" className="py-5" role="region" aria-labelledby="gallery-heading">
       <div className="container">
         {/* Header Section */}
-        <div className="text-center mb-5">
+        <div className="text-center mb-4">
           <h2 id="gallery-heading" className="section-title display-6 mb-3">
             Professional Gallery
           </h2>
-          <p className="lead text-muted mb-4">
+          <p className="lead text-muted mb-3">
             Explore my professional work through images and videos showcasing telecom infrastructure, 
             network installations, and technical expertise across {stats.totalCategories} specialized categories
           </p>
-          
-          {/* Statistics */}
-          <div className="row justify-content-center">
-            <div className="col-lg-8">
-              <div className="d-flex justify-content-center gap-4 mb-4 flex-wrap">
-                <div className="d-flex align-items-center">
-                  <ImageIcon size={20} color="var(--bs-success)" />
-                  <span className="ms-2 text-muted">
-                    <strong>{stats.totalImages}</strong> Images
-                  </span>
-                </div>
-                <div className="d-flex align-items-center">
-                  <VideoIcon size={20} color="var(--bs-primary)" />
-                  <span className="ms-2 text-muted">
-                    <strong>{stats.totalVideos}</strong> Videos
-                  </span>
-                </div>
-                <div className="d-flex align-items-center text-muted">
-                  <strong>{stats.totalCategories}</strong> Categories
-                </div>
+        </div>
+
+        {/* Controls row: stats on left (stack on mobile), search/sort on right */}
+        <div className="row align-items-center g-3 mb-4">
+          <div className="col-12 col-lg-6">
+            <div className="d-flex justify-content-center justify-content-lg-start gap-4 flex-wrap">
+              <div className="d-flex align-items-center">
+                <ImageIcon size={20} color="var(--bs-success)" />
+                <span className="ms-2 text-muted">
+                  <strong>{stats.totalImages}</strong> Images
+                </span>
               </div>
+              <div className="d-flex align-items-center">
+                <VideoIcon size={20} color="var(--bs-primary)" />
+                <span className="ms-2 text-muted">
+                  <strong>{stats.totalVideos}</strong> Videos
+                </span>
+              </div>
+              <div className="d-flex align-items-center text-muted">
+                <strong>{stats.totalCategories}</strong> Categories
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-lg-6">
+            <div className="d-flex gap-2 justify-content-center justify-content-lg-end">
+              <input 
+                type="search" 
+                className="form-control" 
+                placeholder="Search title, description, category..."
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setVisibleCount(9); }}
+                aria-label="Search gallery"
+                style={{ maxWidth: 360 }}
+              />
+              <select 
+                className="form-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort gallery"
+                style={{ maxWidth: 200 }}
+              >
+                <option value="title-asc">Title (A–Z)</option>
+                <option value="title-desc">Title (Z–A)</option>
+                <option value="type">Type (Images first)</option>
+                <option value="category">Category (A–Z)</option>
+              </select>
             </div>
           </div>
         </div>
@@ -350,7 +413,7 @@ const Gallery = () => {
               ))
             ) : (
               // Actual media items
-              filteredMedia.map((media, index) => (
+              displayedMedia.map((media, index) => (
                 <MediaItem
                   key={`${media.src}-${activeFilter}-${index}`}
                   media={media}
@@ -363,31 +426,40 @@ const Gallery = () => {
         </div>
 
         {/* Empty State */}
-        {!isLoading && filteredMedia.length === 0 && (
+        {!isLoading && filteredSortedMedia.length === 0 && (
           <div className="text-center py-5" role="status" aria-live="polite">
             <div className="mb-3">
               <ImageIcon size={48} color="var(--bs-secondary)" />
             </div>
             <h5 className="text-muted">No media found</h5>
             <p className="text-muted">
-              No content available for the selected category. Try selecting a different filter.
+              No content matches your filters. Try clearing search or selecting a different category.
             </p>
             <button 
               className="btn btn-outline-primary"
-              onClick={() => handleFilterChange('all')}
+              onClick={() => { setQuery(''); handleFilterChange('all'); }}
             >
-              Show All Media
+              Reset Filters
             </button>
           </div>
         )}
 
-        {/* Results Summary */}
-        {!isLoading && filteredMedia.length > 0 && (
+        {/* Results Summary + Load More */}
+        {!isLoading && filteredSortedMedia.length > 0 && (
           <div className="text-center mt-4">
             <p className="text-muted small" role="status" aria-live="polite">
-              Showing {filteredMedia.length} of {mediaData.length} items
+              Showing {displayedMedia.length} of {filteredSortedMedia.length} items
               {activeFilter !== 'all' && ` in "${activeFilter}" category`}
+              {query && ` for "${query}"`}
             </p>
+            {canShowMore && (
+              <button 
+                className="btn btn-primary btn-modern"
+                onClick={() => setVisibleCount((v) => v + 9)}
+              >
+                Load more
+              </button>
+            )}
           </div>
         )}
 

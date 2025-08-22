@@ -63,6 +63,7 @@ body {
   font-family: var(--font-primary);
   line-height: 1.6;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  scroll-behavior: smooth; /* enable smooth in-page anchor scrolling */
 }
 
 /* Typography */

@@ -5,6 +5,11 @@ const Navigation = ({ resume }) => {
   const [scrolled, setScrolled] = useState(false);
   const [show, setShow] = useState(false);
 
+  // Use resume to populate brand; fallbacks keep nav stable if resume is missing
+  const displayName = resume?.name || 'Emeka Onu';
+  const shortTitle = resume?.headline ? (resume.headline.split(' WITH ')[0]) : 'Telecom Engineer';
+  const firstName = displayName.split(' ')[0];
+
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
@@ -44,11 +49,11 @@ const Navigation = ({ resume }) => {
               </div>
             </div>
             <div className="d-none d-sm-block">
-              <div className="fw-bold">Emeka Onu</div>
-              <div className="small text-muted">Telecom Engineer</div>
+              <div className="fw-bold">{displayName}</div>
+              <div className="small text-muted">{shortTitle}</div>
             </div>
             <div className="d-sm-none">
-              <div className="fw-bold">Emeka</div>
+              <div className="fw-bold">{firstName}</div>
             </div>
           </Navbar.Brand>
           
