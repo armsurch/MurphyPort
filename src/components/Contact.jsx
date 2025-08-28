@@ -217,10 +217,10 @@ const Contact = ({ resume }) => {
                           className="form-control-modern"
                         >
                           <option value="">Select budget range</option>
-                          <option value="under-5k">Under $5,000</option>
-                          <option value="5k-15k">$5,000 - $15,000</option>
-                          <option value="15k-50k">$15,000 - $50,000</option>
-                          <option value="over-50k">Over $50,000</option>
+                          <option value="under-5m">Under ₦5,000,000</option>
+                          <option value="5m-15m">₦5,000,000 - ₦15,000,000</option>
+                          <option value="15m-50m">₦15,000,000 - ₦50,000,000</option>
+                          <option value="over-50m">Over ₦50,000,000</option>
                         </Form.Select>
                       </Form.Group>
                     </Col>
